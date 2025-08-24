@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urine Analysis API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Urine Analysis API Test</h1>
+        
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="imageFile">Select Urine Image:</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+                <img id="imagePreview" class="preview" style="display: none;">
+            </div>
+
+            <h3>RGB Features (optional - will be extracted from image if not provided)</h3>
+            
+            <div class="form-group">
+                <label for="rValue">R (Red channel average):</label>
+                <input type="number" id="rValue" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+            
+            <div class="form-group">
+                <label for="gValue">G (Green channel average):</label>
+                <input type="number" id="gValue" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+            
+            <div class="form-group">
+                <label for="bValue">B (Blue channel average):</label>
+                <input type="number" id="bValue" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+
+            <div class="form-group">
+                <label for="brightness">Brightness:</label>
+                <input type="number" id="brightness" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+
+            <div class="form-group">
+                <label for="rgbSum">RGB Sum:</label>
+                <input type="number" id="rgbSum" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+
+            <div class="form-group">
+                <label for="normalizedBrightness">Normalized Brightness:</label>
+                <input type="number" id="normalizedBrightness" step="0.01" placeholder="Auto-calculated if empty">
+            </div>
+
+            <button type="button" onclick="extractFeatures()">Extract Features from Image</button>
+            <button type="button" onclick="makePrediction()">Make Prediction</button>
+            <button type="button" onclick="testHealth()">Test API Health</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        // Preview image when selected
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        async function testHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                showResult('Health Check: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                showResult('Error: ' + error.message, true);
+            }
+        }
+
+        async function extractFeatures() {
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('Please select an image file first', true);
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`${API_BASE}/extract_features`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const features = await response.json();
+                
+                // Fill in the form fields with extracted features
+                document.getElementById('rValue').value = features.R.toFixed(2);
+                document.getElementById('gValue').value = features.G.toFixed(2);
+                document.getElementById('bValue').value = features.B.toFixed(2);
+                document.getElementById('brightness').value = features.brightness.toFixed(2);
+                document.getElementById('rgbSum').value = features.rgb_sum.toFixed(2);
+                document.getElementById('normalizedBrightness').value = features.normalized_brightness.toFixed(4);
+
+                showResult('Features extracted successfully:\n' + JSON.stringify(features, null, 2));
+            } catch (error) {
+                showResult('Feature extraction failed: ' + error.message, true);
+            }
+        }
+
+        async function makePrediction() {
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('Please select an image file first', true);
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                // Add feature values if provided
+                const features = ['rValue', 'gValue', 'bValue', 'brightness', 'rgbSum', 'normalizedBrightness'];
+                const fieldMapping = {
+                    'rValue': 'R',
+                    'gValue': 'G', 
+                    'bValue': 'B',
+                    'brightness': 'brightness',
+                    'rgbSum': 'rgb_sum',
+                    'normalizedBrightness': 'normalized_brightness'
+                };
+
+                features.forEach(fieldId => {
+                    const value = document.getElementById(fieldId).value;
+                    if (value) {
+                        formData.append(fieldMapping[fieldId], value);
+                    }
+                });
+
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const result = await response.json();
+                showResult('Prediction Result:\n' + JSON.stringify(result, null, 2));
+            } catch (error) {
+                showResult('Prediction failed: ' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
