@@ -13,12 +13,65 @@ function App() {
   const [error, setError] = useState<string>('');
   const [colorPicker, setColorPicker] = useState<ColorPickerState | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('File size must be less than 10MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      setResult(null);
+      setError('');
+      setShowColorPicker(false);
+      setColorPicker(null);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleUploadAreaClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+    
+    const files = event.dataTransfer.files;
+    if (files && files[0]) {
+      const file = files[0];
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file');
@@ -141,17 +194,48 @@ function App() {
               </h2>
 
               {!imagePreview ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors upload-area">
-                  <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">
-                    Click to upload an image or drag and drop
+                <div 
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer upload-area ${
+                    isDragOver 
+                      ? 'border-blue-500 bg-blue-50 drag-over' 
+                      : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                  onClick={handleUploadAreaClick}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <Camera className={`h-16 w-16 mx-auto mb-4 transition-colors ${
+                    isDragOver ? 'text-blue-500' : 'text-gray-400'
+                  }`} />
+                  <p className={`mb-4 transition-colors ${
+                    isDragOver ? 'text-blue-700 font-medium' : 'text-gray-600'
+                  }`}>
+                    {isDragOver ? 'Drop your image here' : 'Click to upload an image or drag and drop'}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Supports JPG, PNG, WebP (max 10MB)
                   </p>
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="hidden"
                   />
+                  {!isDragOver && (
+                    <button 
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors file-input-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUploadAreaClick();
+                      }}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose File
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
