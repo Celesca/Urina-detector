@@ -313,36 +313,28 @@ function App() {
                     
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Prediction</label>
-                        <p className="text-lg font-bold text-gray-900 capitalize">
-                          {result.prediction}
+                        <label className="block text-sm font-medium text-gray-700">Specific Gravity (Refractometer)</label>
+                        <p className="text-lg font-bold text-gray-900">
+                          {result.predicted_sp_refractometer.toFixed(4)}
                         </p>
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Confidence</label>
-                        <div className="flex items-center space-x-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full confidence-bar"
-                              style={{ width: `${result.confidence * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {(result.confidence * 100).toFixed(1)}%
-                          </span>
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                          {result.message}
+                        </p>
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">RGB Values</label>
+                        <label className="block text-sm font-medium text-gray-700">Selected RGB Values</label>
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-8 h-8 rounded border"
-                            style={{ backgroundColor: `rgb(${result.rgb_values.join(',')})` }}
+                            style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
                           />
                           <span className="text-sm text-gray-900">
-                            R: {result.rgb_values[0]}, G: {result.rgb_values[1]}, B: {result.rgb_values[2]}
+                            R: {colorPicker?.rgb[0]}, G: {colorPicker?.rgb[1]}, B: {colorPicker?.rgb[2]}
                           </span>
                         </div>
                       </div>

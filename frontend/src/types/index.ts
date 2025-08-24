@@ -1,10 +1,9 @@
 // Type definitions for the Urine Detector application
 
 export interface PredictionResult {
-  prediction: string;
-  confidence: number;
-  rgb_values: [number, number, number];
-  status: string;
+  predicted_sp_refractometer: number;
+  success: boolean;
+  message: string;
 }
 
 export interface ColorPickerState {

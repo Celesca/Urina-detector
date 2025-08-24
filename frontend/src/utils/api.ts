@@ -7,9 +7,6 @@ import { API_CONFIG } from '../types';
 const apiClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: 30000, // 30 seconds timeout
-  headers: {
-    'Content-Type': 'multipart/form-data',
-  },
 });
 
 // API function to predict urine analysis
@@ -20,15 +17,20 @@ export const predictUrineAnalysis = async (
   b: number
 ): Promise<PredictionResult> => {
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('r', r.toString());
-  formData.append('g', g.toString());
-  formData.append('b', b.toString());
+  formData.append('image', file);  // Changed from 'file' to 'image'
+  formData.append('R', r.toString());  // Changed to uppercase 'R'
+  formData.append('G', g.toString());  // Changed to uppercase 'G'
+  formData.append('B', b.toString());  // Changed to uppercase 'B'
 
   try {
     const response: AxiosResponse<PredictionResult> = await apiClient.post(
       API_CONFIG.ENDPOINTS.PREDICT,
-      formData
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return response.data;
   } catch (error) {
