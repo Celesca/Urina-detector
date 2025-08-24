@@ -1,0 +1,48 @@
+services:
+  # Backend service (development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: urina-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./backend/models:/app/models
+      - ./backend/images:/app/images
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - DEBUG=True
+      - MODEL_PATH=models/40_epochs.pth
+    env_file:
+      - ./backend/.env
+    command: ["python", "main.py"]
+    restart: unless-stopped
+    networks:
+      - urina-network
+
+  # Frontend service (development with hot reload)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: urina-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - urina-network
+
+networks:
+  urina-network:
+    driver: bridge

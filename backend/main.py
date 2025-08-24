@@ -16,13 +16,16 @@ from pathlib import Path
 
 app = FastAPI(title="Urine Analysis API", description="API for urine specific gravity prediction", version="1.0.0")
 
+# Get CORS origins from environment variable
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:80").split(",")
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Pydantic models for request/response
@@ -337,4 +340,16 @@ async def extract_features(image: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    # Get configuration from environment variables
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    debug = os.getenv("DEBUG", "False").lower() == "true"
+    
+    uvicorn.run(
+        app, 
+        host=host, 
+        port=port,
+        reload=debug,
+        log_level="info" if not debug else "debug"
+    )
