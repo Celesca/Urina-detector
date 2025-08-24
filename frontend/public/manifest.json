@@ -1,0 +1,33 @@
+{
+  "name": "Urine Detector - AI-Powered Analysis",
+  "short_name": "Urine Detector",
+  "description": "Advanced urine analysis using AI and color detection technology",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon-16x16.svg",
+      "sizes": "16x16",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon-32x32.svg", 
+      "sizes": "32x32",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512", 
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["medical", "health", "productivity", "utilities"],
+  "lang": "en"
+}
