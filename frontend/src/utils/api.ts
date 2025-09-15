@@ -46,8 +46,8 @@ export const checkServerHealth = async (): Promise<{ status: string }> => {
   try {
     const response = await apiClient.get(API_CONFIG.ENDPOINTS.HEALTH);
     return response.data;
-  } catch (error) {
-    throw new Error('Server is not responding');
+  } catch (error: any) {
+    throw new Error('Server is not responding', error);
   }
 };
 
