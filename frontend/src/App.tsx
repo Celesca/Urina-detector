@@ -99,7 +99,6 @@ function App() {
   }, []);
 
   // Drag-to-select color picker logic
-  const [isDragging, setIsDragging] = useState(false);
 
   const getColorAtPosition = useCallback((clientX: number, clientY: number) => {
     if (!imageRef.current || !canvasRef.current) return;
@@ -124,23 +123,42 @@ function App() {
   }, []);
 
   const handleImageMouseDown = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
-    setIsDragging(true);
+    // prevent native drag
+    event.preventDefault();
+    // initial pick
     getColorAtPosition(event.clientX, event.clientY);
+
+    // attach global listeners so dragging works even outside the image
+    const onMouseMove = (e: MouseEvent) => getColorAtPosition(e.clientX, e.clientY);
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   }, [getColorAtPosition]);
 
-  const handleImageMouseMove = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
-    if (isDragging) {
-      getColorAtPosition(event.clientX, event.clientY);
-    }
-  }, [isDragging, getColorAtPosition]);
+  // Touch support: allow sliding on touch devices
+  const handleImageTouchStart = useCallback((event: React.TouchEvent<HTMLImageElement>) => {
+    event.preventDefault();
+    const touch = event.touches[0];
+    if (!touch) return;
+    getColorAtPosition(touch.clientX, touch.clientY);
 
-  const handleImageMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) getColorAtPosition(t.clientX, t.clientY);
+    };
 
-  const handleImageMouseLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+  }, [getColorAtPosition]);
 
   const handleAnalyze = async () => {
     if (!selectedImage || !colorPicker) {
@@ -252,10 +270,9 @@ function App() {
                       alt="Uploaded preview"
                       className="w-full h-64 object-contain rounded-lg border crosshair"
                       onMouseDown={handleImageMouseDown}
-                      onMouseMove={handleImageMouseMove}
-                      onMouseUp={handleImageMouseUp}
-                      onMouseLeave={handleImageMouseLeave}
-                      style={{ cursor: 'crosshair' }}
+                      onTouchStart={handleImageTouchStart}
+                      onDragStart={(e) => e.preventDefault()}
+                      style={{ cursor: 'crosshair', touchAction: 'none' }}
                     />
 
                     {showColorPicker && colorPicker && (
