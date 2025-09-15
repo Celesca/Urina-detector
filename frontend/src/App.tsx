@@ -26,7 +26,7 @@ function App() {
         setError('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB');
@@ -38,7 +38,7 @@ function App() {
       setError('');
       setShowColorPicker(false);
       setColorPicker(null);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -67,17 +67,17 @@ function App() {
     event.preventDefault();
     event.stopPropagation();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer.files;
     if (files && files[0]) {
       const file = files[0];
-      
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB');
@@ -89,7 +89,7 @@ function App() {
       setError('');
       setShowColorPicker(false);
       setColorPicker(null);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -176,12 +176,13 @@ function App() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Droplets className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-800">Urine Detector</h1>
+            <img src="/U-Gra_logo.jpg" alt="U-Gra Logo" className="h-12 w-12 mr-3" />
+            <h1 className="text-4xl font-bold text-gray-800">U-Gra</h1>
           </div>
           <p className="text-lg text-gray-600">
             Upload an image, select a color point, and get instant analysis results
           </p>
+
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -192,25 +193,25 @@ function App() {
                 <Upload className="h-6 w-6 mr-2 text-blue-600" />
                 Upload Image
               </h2>
+              <p className="text-sm flex mb-4 text-gray-500 mt-1">
+                ข้อควรระวังการเก็บตัวอย่าง → "เก็บอย่างน้อยครึ่งภาชนะที่สะอาดและแห้ง ภายใน 15 นาที"
+              </p>
 
               {!imagePreview ? (
-                <div 
-                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer upload-area ${
-                    isDragOver 
-                      ? 'border-blue-500 bg-blue-50 drag-over' 
+                <div
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer upload-area ${isDragOver
+                      ? 'border-blue-500 bg-blue-50 drag-over'
                       : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
+                    }`}
                   onClick={handleUploadAreaClick}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <Camera className={`h-16 w-16 mx-auto mb-4 transition-colors ${
-                    isDragOver ? 'text-blue-500' : 'text-gray-400'
-                  }`} />
-                  <p className={`mb-4 transition-colors ${
-                    isDragOver ? 'text-blue-700 font-medium' : 'text-gray-600'
-                  }`}>
+                  <Camera className={`h-16 w-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-blue-500' : 'text-gray-400'
+                    }`} />
+                  <p className={`mb-4 transition-colors ${isDragOver ? 'text-blue-700 font-medium' : 'text-gray-600'
+                    }`}>
                     {isDragOver ? 'Drop your image here' : 'Click to upload an image or drag and drop'}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
@@ -224,7 +225,7 @@ function App() {
                     className="hidden"
                   />
                   {!isDragOver && (
-                    <button 
+                    <button
                       type="button"
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors file-input-button"
                       onClick={(e) => {
@@ -247,7 +248,7 @@ function App() {
                       className="w-full h-64 object-contain rounded-lg border crosshair"
                       onClick={handleImageClick}
                     />
-                    
+
                     {showColorPicker && colorPicker && (
                       <div
                         className="color-picker-point"
@@ -259,11 +260,11 @@ function App() {
                       />
                     )}
                   </div>
-                  
+
                   <p className="text-sm text-gray-600 text-center">
                     Click on the image to select a color point for analysis
                   </p>
-                  
+
                   <button
                     onClick={resetAnalysis}
                     className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
@@ -296,8 +297,8 @@ function App() {
               )}
 
               {error && (
-                <ErrorAlert 
-                  message={error} 
+                <ErrorAlert
+                  message={error}
                   onDismiss={() => setError('')}
                   className="mb-4"
                 />
@@ -310,22 +311,22 @@ function App() {
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                       <span className="font-semibold text-green-800">Analysis Complete</span>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Specific Gravity (Refractometer)</label>
                         <p className="text-lg font-bold text-gray-900">
-                          {result.predicted_sp_refractometer.toFixed(4)}
+                          {result.predicted_sp_refractometer.toFixed(3)}
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Status</label>
                         <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`}>
                           {result.message}
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Selected RGB Values</label>
                         <div className="flex items-center space-x-3">
@@ -348,11 +349,10 @@ function App() {
                 <button
                   onClick={handleAnalyze}
                   disabled={!selectedImage || !colorPicker || isLoading}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-                    selectedImage && colorPicker && !isLoading
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${selectedImage && colorPicker && !isLoading
                       ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {isLoading ? (
                     <>
