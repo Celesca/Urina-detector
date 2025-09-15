@@ -98,43 +98,48 @@ function App() {
     }
   }, []);
 
-  const handleImageClick = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
+  // Drag-to-select color picker logic
+  const [isDragging, setIsDragging] = useState(false);
+
+  const getColorAtPosition = useCallback((clientX: number, clientY: number) => {
     if (!imageRef.current || !canvasRef.current) return;
-
     const rect = imageRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    // Get the actual image dimensions
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     const img = imageRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
     if (!ctx) return;
-
-    // Set canvas size to match image
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-
-    // Draw image on canvas
     ctx.drawImage(img, 0, 0);
-
-    // Calculate the actual pixel position on the original image
     const scaleX = img.naturalWidth / img.clientWidth;
     const scaleY = img.naturalHeight / img.clientHeight;
     const pixelX = Math.floor(x * scaleX);
     const pixelY = Math.floor(y * scaleY);
-
-    // Get pixel data
     const imageData = ctx.getImageData(pixelX, pixelY, 1, 1);
     const [r, g, b] = imageData.data;
-
-    setColorPicker({
-      x: x,
-      y: y,
-      rgb: [r, g, b]
-    });
+    setColorPicker({ x, y, rgb: [r, g, b] });
     setShowColorPicker(true);
+  }, []);
+
+  const handleImageMouseDown = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
+    setIsDragging(true);
+    getColorAtPosition(event.clientX, event.clientY);
+  }, [getColorAtPosition]);
+
+  const handleImageMouseMove = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
+    if (isDragging) {
+      getColorAtPosition(event.clientX, event.clientY);
+    }
+  }, [isDragging, getColorAtPosition]);
+
+  const handleImageMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleImageMouseLeave = useCallback(() => {
+    setIsDragging(false);
   }, []);
 
   const handleAnalyze = async () => {
@@ -246,7 +251,11 @@ function App() {
                       src={imagePreview}
                       alt="Uploaded preview"
                       className="w-full h-64 object-contain rounded-lg border crosshair"
-                      onClick={handleImageClick}
+                      onMouseDown={handleImageMouseDown}
+                      onMouseMove={handleImageMouseMove}
+                      onMouseUp={handleImageMouseUp}
+                      onMouseLeave={handleImageMouseLeave}
+                      style={{ cursor: 'crosshair' }}
                     />
 
                     {showColorPicker && colorPicker && (
