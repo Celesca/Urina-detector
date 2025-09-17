@@ -37,3 +37,33 @@ export function classifyColor(r: number, g: number, b: number): string {
   // If no category matches
   return 'Unknown';
 }
+
+export function getRecommendation(category: string): string {
+  switch (category) {
+    case 'Red (แดง)':
+    case 'Pink (ชมพู)':
+      return `สาเหตุ: มีเลือดปน, กินบีทรูท, ยาบางชนิด 
+
+คำแนะนำ: ถ้าไม่หายภายใน 1–2 วัน หรือมีอาการปวดเอว/ไข้ → พบแพทย์`;
+    
+    case 'Brown (น้ำตาล)':
+    case 'Dark (โทนดำ)':
+      return `สาเหตุ: โรคตับ, ตาเหลือง, ยาบางชนิด, ภาวะกล้ามเนื้อสลาย 
+
+คำแนะนำ: ถ้ามี ตาเหลือง ตัวเหลือง หรืออ่อนเพลียมาก → พบแพทย์`;
+    
+    case 'Green (เขียว)':
+    case 'Blue (ฟ้า)':
+      return `สาเหตุ: ยาบางชนิด, การติดเชื้อบางชนิด (หายาก) 
+
+คำแนะนำ: ถ้ามีกลิ่นเหม็นผิดปกติ → พบแพทย์`;
+    
+    case 'Milky White (ขาวขุ่น / น้ำนม)':
+      return `สาเหตุ: การติดเชื้อทางเดินปัสสาวะ, นิ่ว, ไขมันปน (chyluria) 
+
+คำแนะนำ: พบแพทย์ทันที`;
+    
+    default:
+      return '-';
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Camera, Droplets, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { classifyColor } from './utils/color_class';
+import { classifyColor, getRecommendation } from './utils/color_class';
 import type { PredictionResult, ColorPickerState } from './types';
 import { predictUrineAnalysis } from './utils/api';
 import { ColorPickerDisplay, ErrorAlert } from './components';
@@ -10,7 +10,7 @@ function App() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<PredictionResult | null>(null);
+  const [result, setResult] = useState<(PredictionResult & { recommendation?: string }) | null>(null);
   const [error, setError] = useState<string>('');
   const [colorPicker, setColorPicker] = useState<ColorPickerState | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -177,9 +177,9 @@ function App() {
         colorPicker.rgb[1],
         colorPicker.rgb[2]
       );
-      
+
       // Modify message based on SG value
-      const modifiedResult = { ...result };
+      const modifiedResult: PredictionResult & { recommendation?: string } = { ...result };
       const sg = result.predicted_sp_refractometer;
       if (sg < 1.005) {
         modifiedResult.message = `สาเหตุ: 
@@ -198,7 +198,11 @@ function App() {
 ➝ ดื่มน้ำเพิ่มอย่างเพียงพอ 
 ➝ ถ้าค่ายังสูงต่อเนื่อง หรือมีอาการร่วม เช่น ปัสสาวะแสบขัด, บวม, เหนื่อยง่าย, น้ำหนักลด → พบแพทย์`;
       }
-      
+
+      // Add recommendation based on color
+      const colorCategory = classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]);
+      modifiedResult.recommendation = getRecommendation(colorCategory);
+
       setResult(modifiedResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -377,16 +381,10 @@ function App() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Color Category</label>
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded border"
-                            style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
-                          />
-                          <span className="text-sm text-gray-900">
-                            {colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : ''}
-                          </span>
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700">คำแนะนำ</label>
+                        <p className="text-sm text-gray-900" style={{ whiteSpace: 'pre-line' }}>
+                          {result.recommendation || '-'}
+                        </p>
                       </div>
                     </div>
                   </div>
