@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Camera, Droplets, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { classifyColor } from './utils/color_class';
 import type { PredictionResult, ColorPickerState } from './types';
 import { predictUrineAnalysis } from './utils/api';
 import { ColorPickerDisplay, ErrorAlert } from './components';
@@ -354,14 +355,14 @@ function App() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Selected RGB Values</label>
+                        <label className="block text-sm font-medium text-gray-700">Color Category</label>
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-8 h-8 rounded border"
                             style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
                           />
                           <span className="text-sm text-gray-900">
-                            R: {colorPicker?.rgb[0]}, G: {colorPicker?.rgb[1]}, B: {colorPicker?.rgb[2]}
+                            {colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : ''}
                           </span>
                         </div>
                       </div>
