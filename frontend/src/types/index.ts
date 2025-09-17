@@ -36,9 +36,7 @@ export type AnalysisStatusType = typeof AnalysisStatus[keyof typeof AnalysisStat
 
 // Configuration constants
 export const API_CONFIG = {
-  BASE_URL: process.env.NODE_ENV === 'production' 
-    ? 'http://localhost:8000' // In production, this will be handled by reverse proxy or direct access
-    : 'http://localhost:8000', // Development
+  BASE_URL: 'https://urine-analysis-api.azurewebsites.net/',
   ENDPOINTS: {
     PREDICT: '/predict',
     HEALTH: '/health'

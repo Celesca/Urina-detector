@@ -113,14 +113,14 @@ az webapp config appsettings set \
         DOCKER_REGISTRY_SERVER_USERNAME=$ACR_USERNAME \
         DOCKER_REGISTRY_SERVER_PASSWORD=$ACR_PASSWORD \
         WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
-        CORS_ORIGINS="https://$APP_NAME.azurewebsites.net,http://localhost:3000,http://localhost:5173"
+        CORS_ORIGINS="*"
 
 # Enable CORS
 echo "🔓 Configuring CORS..."
 az webapp cors add \
     --name $APP_NAME \
     --resource-group $RESOURCE_GROUP \
-    --allowed-origins "https://$APP_NAME.azurewebsites.net" "http://localhost:3000" "http://localhost:5173"
+    --allowed-origins "*"
 
 # Get the app URL
 APP_URL="https://$APP_NAME.azurewebsites.net"
