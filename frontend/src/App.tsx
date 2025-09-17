@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, Camera, Droplets, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { classifyColor, getRecommendation } from './utils/color_class';
 import type { PredictionResult, ColorPickerState } from './types';
 import { predictUrineAnalysis } from './utils/api';
 import { ColorPickerDisplay, ErrorAlert } from './components';
@@ -9,7 +10,7 @@ function App() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<PredictionResult | null>(null);
+  const [result, setResult] = useState<(PredictionResult & { recommendation?: string }) | null>(null);
   const [error, setError] = useState<string>('');
   const [colorPicker, setColorPicker] = useState<ColorPickerState | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -26,7 +27,7 @@ function App() {
         setError('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB');
@@ -38,7 +39,7 @@ function App() {
       setError('');
       setShowColorPicker(false);
       setColorPicker(null);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -67,17 +68,17 @@ function App() {
     event.preventDefault();
     event.stopPropagation();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer.files;
     if (files && files[0]) {
       const file = files[0];
-      
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file');
         return;
       }
-      
+
       // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         setError('File size must be less than 10MB');
@@ -89,7 +90,7 @@ function App() {
       setError('');
       setShowColorPicker(false);
       setColorPicker(null);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -98,44 +99,67 @@ function App() {
     }
   }, []);
 
-  const handleImageClick = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
+  // Drag-to-select color picker logic
+
+  const getColorAtPosition = useCallback((clientX: number, clientY: number) => {
     if (!imageRef.current || !canvasRef.current) return;
-
     const rect = imageRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    // Get the actual image dimensions
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     const img = imageRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
     if (!ctx) return;
-
-    // Set canvas size to match image
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-
-    // Draw image on canvas
     ctx.drawImage(img, 0, 0);
-
-    // Calculate the actual pixel position on the original image
     const scaleX = img.naturalWidth / img.clientWidth;
     const scaleY = img.naturalHeight / img.clientHeight;
     const pixelX = Math.floor(x * scaleX);
     const pixelY = Math.floor(y * scaleY);
-
-    // Get pixel data
     const imageData = ctx.getImageData(pixelX, pixelY, 1, 1);
     const [r, g, b] = imageData.data;
-
-    setColorPicker({
-      x: x,
-      y: y,
-      rgb: [r, g, b]
-    });
+    setColorPicker({ x, y, rgb: [r, g, b] });
     setShowColorPicker(true);
   }, []);
+
+  const handleImageMouseDown = useCallback((event: React.MouseEvent<HTMLImageElement>) => {
+    // prevent native drag
+    event.preventDefault();
+    // initial pick
+    getColorAtPosition(event.clientX, event.clientY);
+
+    // attach global listeners so dragging works even outside the image
+    const onMouseMove = (e: MouseEvent) => getColorAtPosition(e.clientX, e.clientY);
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [getColorAtPosition]);
+
+  // Touch support: allow sliding on touch devices
+  const handleImageTouchStart = useCallback((event: React.TouchEvent<HTMLImageElement>) => {
+    event.preventDefault();
+    const touch = event.touches[0];
+    if (!touch) return;
+    getColorAtPosition(touch.clientX, touch.clientY);
+
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) getColorAtPosition(t.clientX, t.clientY);
+    };
+
+    const onTouchEnd = () => {
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+  }, [getColorAtPosition]);
 
   const handleAnalyze = async () => {
     if (!selectedImage || !colorPicker) {
@@ -153,7 +177,36 @@ function App() {
         colorPicker.rgb[1],
         colorPicker.rgb[2]
       );
-      setResult(result);
+
+      // Modify message based on SG value
+      const modifiedResult: PredictionResult & { recommendation?: string } = { ...result };
+      const sg = result.predicted_sp_refractometer;
+      if (sg < 1.005) {
+        modifiedResult.message = `สาเหตุ: 
+• ดื่มน้ำมากเกินไป 
+• ไตทำงานผิดปกติ 
+
+คำแนะนำ: 
+➝ ลดปริมาณการดื่มน้ำให้พอเหมาะ (ประมาณวันละ 1.5–2 ลิตร เว้นคนมีโรคประจำตัวที่ต้องจำกัดน้ำ) 
+➝ ถ้าค่ายังต่ำต่อเนื่องหลายวัน → ควรพบแพทย์`;
+      } else if (sg > 1.030) {
+        modifiedResult.message = `สาเหตุ: 
+• ร่างกายขาดน้ำ (ดื่มน้ำน้อย, เหงื่อออกมาก) 
+• อาจมีน้ำตาลหรือโปรตีนรั่วออกมาในปัสสาวะ (เช่น เบาหวาน, โรคไต) 
+
+คำแนะนำ: 
+➝ ดื่มน้ำเพิ่มอย่างเพียงพอ 
+➝ ถ้าค่ายังสูงต่อเนื่อง หรือมีอาการร่วม เช่น ปัสสาวะแสบขัด, บวม, เหนื่อยง่าย, น้ำหนักลด → พบแพทย์`;
+      }
+      else {
+        modifiedResult.message = 'ผลปกติ';
+      }
+
+      // Add recommendation based on color
+      const colorCategory = classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]);
+      modifiedResult.recommendation = getRecommendation(colorCategory);
+
+      setResult(modifiedResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
@@ -176,12 +229,13 @@ function App() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Droplets className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-800">Urine Detector</h1>
+            <img src="/U-Gra_logo.jpg" alt="U-Gra Logo" className="h-12 w-12 mr-3" />
+            <h1 className="text-4xl font-bold text-gray-800">U-Gra</h1>
           </div>
           <p className="text-lg text-gray-600">
             Upload an image, select a color point, and get instant analysis results
           </p>
+
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -192,25 +246,25 @@ function App() {
                 <Upload className="h-6 w-6 mr-2 text-blue-600" />
                 Upload Image
               </h2>
+              <p className="text-sm flex mb-4 text-gray-500 mt-1">
+                ข้อควรระวังการเก็บตัวอย่าง → "เก็บอย่างน้อยครึ่งภาชนะที่สะอาดและแห้ง ภายใน 15 นาที"
+              </p>
 
               {!imagePreview ? (
-                <div 
-                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer upload-area ${
-                    isDragOver 
-                      ? 'border-blue-500 bg-blue-50 drag-over' 
+                <div
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer upload-area ${isDragOver
+                      ? 'border-blue-500 bg-blue-50 drag-over'
                       : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
+                    }`}
                   onClick={handleUploadAreaClick}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <Camera className={`h-16 w-16 mx-auto mb-4 transition-colors ${
-                    isDragOver ? 'text-blue-500' : 'text-gray-400'
-                  }`} />
-                  <p className={`mb-4 transition-colors ${
-                    isDragOver ? 'text-blue-700 font-medium' : 'text-gray-600'
-                  }`}>
+                  <Camera className={`h-16 w-16 mx-auto mb-4 transition-colors ${isDragOver ? 'text-blue-500' : 'text-gray-400'
+                    }`} />
+                  <p className={`mb-4 transition-colors ${isDragOver ? 'text-blue-700 font-medium' : 'text-gray-600'
+                    }`}>
                     {isDragOver ? 'Drop your image here' : 'Click to upload an image or drag and drop'}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
@@ -224,7 +278,7 @@ function App() {
                     className="hidden"
                   />
                   {!isDragOver && (
-                    <button 
+                    <button
                       type="button"
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors file-input-button"
                       onClick={(e) => {
@@ -245,9 +299,12 @@ function App() {
                       src={imagePreview}
                       alt="Uploaded preview"
                       className="w-full h-64 object-contain rounded-lg border crosshair"
-                      onClick={handleImageClick}
+                      onMouseDown={handleImageMouseDown}
+                      onTouchStart={handleImageTouchStart}
+                      onDragStart={(e) => e.preventDefault()}
+                      style={{ cursor: 'crosshair', touchAction: 'none' }}
                     />
-                    
+
                     {showColorPicker && colorPicker && (
                       <div
                         className="color-picker-point"
@@ -259,11 +316,11 @@ function App() {
                       />
                     )}
                   </div>
-                  
+
                   <p className="text-sm text-gray-600 text-center">
                     Click on the image to select a color point for analysis
                   </p>
-                  
+
                   <button
                     onClick={resetAnalysis}
                     className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
@@ -296,8 +353,8 @@ function App() {
               )}
 
               {error && (
-                <ErrorAlert 
-                  message={error} 
+                <ErrorAlert
+                  message={error}
                   onDismiss={() => setError('')}
                   className="mb-4"
                 />
@@ -310,33 +367,40 @@ function App() {
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                       <span className="font-semibold text-green-800">Analysis Complete</span>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Specific Gravity (Refractometer)</label>
                         <p className="text-lg font-bold text-gray-900">
-                          {result.predicted_sp_refractometer.toFixed(4)}
+                          {result.predicted_sp_refractometer.toFixed(3)}
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`} style={{ whiteSpace: 'pre-line' }}>
                           {result.message}
                         </p>
                       </div>
-                      
+
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Selected RGB Values</label>
+                        <label className="block text-sm font-medium text-gray-700">Color Category</label>
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-8 h-8 rounded border"
                             style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
                           />
                           <span className="text-sm text-gray-900">
-                            R: {colorPicker?.rgb[0]}, G: {colorPicker?.rgb[1]}, B: {colorPicker?.rgb[2]}
+                            {colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : ''}
                           </span>
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">คำแนะนำ</label>
+                        <p className="text-sm text-gray-900" style={{ whiteSpace: 'pre-line' }}>
+                          {result.recommendation || '-'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -348,11 +412,10 @@ function App() {
                 <button
                   onClick={handleAnalyze}
                   disabled={!selectedImage || !colorPicker || isLoading}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-                    selectedImage && colorPicker && !isLoading
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${selectedImage && colorPicker && !isLoading
                       ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {isLoading ? (
                     <>
