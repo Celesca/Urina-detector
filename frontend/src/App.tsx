@@ -198,6 +198,9 @@ function App() {
 ➝ ดื่มน้ำเพิ่มอย่างเพียงพอ 
 ➝ ถ้าค่ายังสูงต่อเนื่อง หรือมีอาการร่วม เช่น ปัสสาวะแสบขัด, บวม, เหนื่อยง่าย, น้ำหนักลด → พบแพทย์`;
       }
+      else {
+        modifiedResult.message = 'ผลปกติ';
+      }
 
       // Add recommendation based on color
       const colorCategory = classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]);
@@ -378,6 +381,19 @@ function App() {
                         <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`} style={{ whiteSpace: 'pre-line' }}>
                           {result.message}
                         </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Color Category</label>
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="w-8 h-8 rounded border"
+                            style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
+                          />
+                          <span className="text-sm text-gray-900">
+                            {colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : ''}
+                          </span>
+                        </div>
                       </div>
 
                       <div>
