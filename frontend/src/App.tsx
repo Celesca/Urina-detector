@@ -177,7 +177,29 @@ function App() {
         colorPicker.rgb[1],
         colorPicker.rgb[2]
       );
-      setResult(result);
+      
+      // Modify message based on SG value
+      const modifiedResult = { ...result };
+      const sg = result.predicted_sp_refractometer;
+      if (sg < 1.005) {
+        modifiedResult.message = `สาเหตุ: 
+• ดื่มน้ำมากเกินไป 
+• ไตทำงานผิดปกติ 
+
+คำแนะนำ: 
+➝ ลดปริมาณการดื่มน้ำให้พอเหมาะ (ประมาณวันละ 1.5–2 ลิตร เว้นคนมีโรคประจำตัวที่ต้องจำกัดน้ำ) 
+➝ ถ้าค่ายังต่ำต่อเนื่องหลายวัน → ควรพบแพทย์`;
+      } else if (sg > 1.030) {
+        modifiedResult.message = `สาเหตุ: 
+• ร่างกายขาดน้ำ (ดื่มน้ำน้อย, เหงื่อออกมาก) 
+• อาจมีน้ำตาลหรือโปรตีนรั่วออกมาในปัสสาวะ (เช่น เบาหวาน, โรคไต) 
+
+คำแนะนำ: 
+➝ ดื่มน้ำเพิ่มอย่างเพียงพอ 
+➝ ถ้าค่ายังสูงต่อเนื่อง หรือมีอาการร่วม เช่น ปัสสาวะแสบขัด, บวม, เหนื่อยง่าย, น้ำหนักลด → พบแพทย์`;
+      }
+      
+      setResult(modifiedResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
@@ -349,7 +371,7 @@ function App() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`} style={{ whiteSpace: 'pre-line' }}>
                           {result.message}
                         </p>
                       </div>
