@@ -14,6 +14,11 @@ export function classifyColor(r: number, g: number, b: number): string {
     return 'Blue (ฟ้า)';
   }
 
+  // 4. Yellow (เหลือง)
+  if (r >= 160 && r <= 255 && g >= 120 && g <= 230 && b >= 0 && b <= 120) {
+    return 'Yellow (เหลือง)';
+  }
+
   // 4. Brown / Dark (น้ำตาล / โทนดำ)
   if (r >= 60 && r <= 150 && g >= 40 && g <= 120 && b >= 20 && b <= 100) {
     return 'Brown (น้ำตาล)';
