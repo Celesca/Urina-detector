@@ -360,52 +360,72 @@ function App() {
                 />
               )}
 
-              {result && (
-                <div className="space-y-4">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center mb-2">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="font-semibold text-green-800">Analysis Complete</span>
-                    </div>
+              {result && (() => {
+                // Determine color category and anomaly state
+                const colorCategory = colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : '';
+                const isYellow = /yellow|เหลือง/i.test(colorCategory);
+                // SG check: normal range is 1.005 - 1.030
+                const sg = result.predicted_sp_refractometer || 0;
+                const sgNormal = sg >= 1.005 && sg <= 1.030;
+                // Anomaly if color is NOT yellow OR SG is outside the normal range
+                const isAnomaly = !isYellow || !sgNormal;
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Specific Gravity (Refractometer)</label>
-                        <p className="text-lg font-bold text-gray-900">
-                          {result.predicted_sp_refractometer.toFixed(3)}
-                        </p>
+                const cardBg = isAnomaly ? 'bg-red-50' : 'bg-green-50';
+                const cardBorder = isAnomaly ? 'border-red-200' : 'border-green-200';
+                const iconClass = isAnomaly ? 'text-red-500' : 'text-green-500';
+                const headerText = isAnomaly ? 'Anomaly Warning' : 'Analysis Complete';
+
+                return (
+                  <div className="space-y-4">
+                    <div className={`${cardBg} border ${cardBorder} rounded-lg p-4`}>
+                      <div className="flex items-center mb-2">
+                        {isAnomaly ? (
+                          <AlertCircle className={`h-5 w-5 ${iconClass} mr-2`} />
+                        ) : (
+                          <CheckCircle className={`h-5 w-5 ${iconClass} mr-2`} />
+                        )}
+                        <span className={`font-semibold ${isAnomaly ? 'text-red-800' : 'text-green-800'}`}>{headerText}</span>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`} style={{ whiteSpace: 'pre-line' }}>
-                          {result.message}
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Color Category</label>
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded border"
-                            style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
-                          />
-                          <span className="text-sm text-gray-900">
-                            {colorPicker ? classifyColor(colorPicker.rgb[0], colorPicker.rgb[1], colorPicker.rgb[2]) : ''}
-                          </span>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Specific Gravity (Refractometer)</label>
+                          <p className="text-lg font-bold text-gray-900">
+                            {result.predicted_sp_refractometer.toFixed(3)}
+                          </p>
                         </div>
-                      </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">คำแนะนำ</label>
-                        <p className="text-sm text-gray-900" style={{ whiteSpace: 'pre-line' }}>
-                          {result.recommendation || '-'}
-                        </p>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Status</label>
+                          <p className={`text-sm font-medium ${result.success ? (isAnomaly ? 'text-red-700' : 'text-green-700') : 'text-red-700'}`} style={{ whiteSpace: 'pre-line' }}>
+                            {result.message}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Color Category</label>
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className="w-8 h-8 rounded border"
+                              style={{ backgroundColor: `rgb(${colorPicker?.rgb.join(',')})` }}
+                            />
+                            <span className="text-sm text-gray-900">
+                              {colorCategory}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">คำแนะนำ</label>
+                          <p className="text-sm text-gray-900" style={{ whiteSpace: 'pre-line' }}>
+                            {result.recommendation || '-'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Action Button */}
               <div className="mt-6">
