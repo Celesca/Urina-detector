@@ -199,7 +199,7 @@ function App() {
 ➝ ถ้าค่ายังสูงต่อเนื่อง หรือมีอาการร่วม เช่น ปัสสาวะแสบขัด, บวม, เหนื่อยง่าย, น้ำหนักลด → พบแพทย์`;
       }
       else {
-        modifiedResult.message = 'ผลปกติ';
+        modifiedResult.message = 'ผิดปกติ';
       }
 
       // Add recommendation based on color
